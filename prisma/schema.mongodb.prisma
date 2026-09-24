@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+}
+
+model User {
+  id            String    @id @default(auto() { type: 15 }) @map("_id") @test.ObjectId
+  email         String    @unique
+  password      String
+  name          String?
+  roleId        String?   @test.ObjectId
+  refreshTokens String[]
+  bookingIds    String[]
+  paymentIds    String[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Role {
+  id               String   @id @default(auto() { type: 15 }) @map("_id") @test.ObjectId
+  name             String   @unique
+  description      String?
+  isSystem         Boolean  @default(false)
+  permissionIds    String[]
+  userIds          String[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Permission {
+  id          String   @id @default(auto() { type: 15 }) @map("_id") @test.ObjectId
+  key         String   @unique
+  description String?
+  roleIds     String[]
+}
+
+model RefreshToken {
+  id        String   @id @default(auto() { type: 15 }) @map("_id") @test.ObjectId
+  tokenHash String
+  userId    String   @test.ObjectId
+  revoked   Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Flight {
+  id            String   @id @default(auto() { type: 15 }) @map("_id") @test.ObjectId
+  duffelOfferId String   @unique
+  origin        String
+  destination   String
+  departureAt   DateTime
+  arrivalAt     DateTime
+  price         Int
+  currency      String
+  carrier       String
+  flightNumber  String?
+  bookingIds    String[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Booking {
+  id              String        @id @default(auto() { type: 15 }) @map("_id") @test.ObjectId
+  duffelOrderId    String?       @unique
+  userId          String        @test.ObjectId
+  flightId        String        @test.ObjectId
+  status          String        @default("PENDING")
+  idempotencyKey  String?       @unique
+  passengerIds    String[]
+  paymentIds      String[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Passenger {
+  id        String   @id @default(auto() { type: 15 }) @map("_id") @test.ObjectId
+  bookingId String   @test.ObjectId
+  firstName String
+  lastName  String
+  email     String
+  phone     String?
+  dob       DateTime?
+  createdAt DateTime @default(now())
+}
+
+model Payment {
+  id               String   @id @default(auto() { type: 15 }) @map("_id") @test.ObjectId
+  duffelOrderId     String?
+  bookingId       String   @test.ObjectId
+  amount          Int
+  currency        String
+  status          String   @default("PENDING")
+  provider        String
+  providerChargeId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model WebhookEvent {
+  id          String   @id @default(auto() { type: 15 }) @map("_id") @test.ObjectId
+  eventId     String   @unique
+  provider    String
+  type        String
+  payload     Json
+  processedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+}
+
+model QueueEvent {
+  id        String   @id @default(auto() { type: 15 }) @map("_id") @test.ObjectId
+  jobId     String   @unique
+  type      String
+  payload   Json
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Session {
+  id        String   @id @default(auto() { type: 15 }) @map("_id") @test.ObjectId
+  sid       String   @unique
+  data      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}

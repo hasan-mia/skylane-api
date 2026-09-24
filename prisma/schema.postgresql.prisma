@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  name          String?
+  roleId        String?
+  role          Role?     @relation(fields: [roleId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  refreshTokens RefreshToken[]
+  bookings      Booking[]
+  auditLogs     RoleAuditLog[]
+}
+
+model Role {
+  id            String       @id @default(uuid())
+  name          String       @unique
+  description   String?
+  isSystem      Boolean      @default(false)
+  permissions   RolePermission[]
+  users         User[]
+  auditLogs     RoleAuditLog[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  description String?
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  id          String   @id @default(uuid())
+  roleId      String
+  role        Role     @relation(fields: [roleId], references: [id])
+  permissionId String
+  permission  Permission @relation(fields: [permissionId], references: [id])
+  @@unique([roleId, permissionId])
+}
+
+model RoleAuditLog {
+  id            String   @id @default(uuid())
+  actorId       String
+  actor         User     @relation(fields: [actorId], references: [id])
+  action        String
+  targetRoleId  String
+  diff          String?
+  createdAt     DateTime @default(now())
+  targetRole    Role     @relation(fields: [targetRoleId], references: [id])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  revoked   Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@index([userId])
+}
+
+model Flight {
+  id           String        @id @default(uuid())
+  duffelOfferId String       @unique
+  origin        String
+  destination   String
+  departureAt   DateTime
+  arrivalAt     DateTime
+  price         Int
+  currency      String
+  carrier       String
+  flightNumber  String?
+  bookings      Booking[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Booking {
+  id            String   @id @default(uuid())
+  duffelOrderId   String?  @unique
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  flightId      String
+  flight        Flight   @relation(fields: [flightId], references: [id])
+  status        BookingStatus @default(PENDING)
+  idempotencyKey String? @unique
+  passengers    Passenger[]
+  payments      Payment[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  @@index([duffelOrderId])
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  REFUNDED
+}
+
+model Passenger {
+  id        String   @id @default(uuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  firstName String
+  lastName  String
+  email     String
+  phone     String?
+  dob       DateTime?
+  createdAt DateTime @default(now())
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  duffelOrderId   String?
+  bookingId     String
+  booking       Booking  @relation(fields: [bookingId], references: [id])
+  amount        Int
+  currency      String
+  status        PaymentStatus @default(PENDING)
+  provider      String
+  providerChargeId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  @@index([bookingId])
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+model WebhookEvent {
+  id          String   @id @default(uuid())
+  eventId     String   @unique
+  provider    String
+  type        String
+  payload     Json
+  processedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  @@index([provider, type])
+}
+
+model QueueEvent {
+  id         String   @id @default(uuid())
+  jobId      String   @unique
+  type       String
+  payload    Json
+  status     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  sid       String   @unique
+  data      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@index([expiresAt])
+}
