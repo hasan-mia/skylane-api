@@ -3,25 +3,41 @@
 **Open-source, production-grade NestJS backend for flight booking powered by the Duffel API.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![CI](https://github.com/skylane/skylane-api/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
-[![CodeQL](https://github.com/skylane/skylane-api/actions/workflows/codeql.yml/badge.svg)](.github/workflows/codeql.yml)
+[![CI](https://github.com/skylane/skylane-api/actions/workflows/ci.yml/badge.svg)](https://github.com/skylane/skylane-api/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/skylane/skylane-api/actions/workflows/codeql.yml/badge.svg)](https://github.com/skylane/skylane-api/actions/workflows/codeql.yml)
 
 ---
 
 ## Overview
 
-Skylane is a comprehensive flight booking/OTA (Online Travel Agency) backend built with NestJS, TypeScript, PostgreSQL/MySQL/MongoDB, Redis, and the Duffel API. It provides a complete, secure, and scalable foundation for flight search, booking, payment processing, and order management.
+Skylane is a comprehensive flight booking/OTA (Online Travel Agency) backend built with **NestJS, TypeScript, Prisma, PostgreSQL/MySQL/MongoDB, Redis, Stripe, and the Duffel API**.
 
-> **Note:** Since v12+, NestJS ships as ESM-only (`"type": "module"`). This
-> project targets Node.js >= 20 and runs tests with **Vitest** (Jest cannot load
-> the ESM `@nestjs/*` packages from CommonJS). See
-> [ARCHITECTURE.md](ARCHITECTURE.md) for details.
+It provides a complete, secure, and scalable foundation for:
 
-### Architecture Diagram
+* Flight search
+* Flight booking
+* Booking cancellation and changes
+* Payment processing
+* Order management
+* Authentication
+* Dynamic role-based access control
+* Webhook processing
+* Rate limiting
+* API documentation
+* Structured logging
+
+> **Note:** NestJS v12+ ships as ESM-only (`"type": "module"`). This project targets Node.js >= 20 and uses **Vitest** for testing. Jest is not used because it cannot load the ESM `@nestjs/*` packages from CommonJS without additional configuration.
+>
+> See [ARCHITECTURE.md](ARCHITECTURE.md) for more details.
+
+---
+
+## Architecture Diagram
 
 ```mermaid
 graph TB
     A[Client] --> B[NestJS Application]
+
     B --> C[Auth Module]
     B --> D[Flights Module]
     B --> E[Bookings Module]
@@ -29,7 +45,7 @@ graph TB
     B --> G[Roles Module]
     B --> H[Webhooks Module]
 
-    C --> I[(PostgreSQL)]
+    C --> I[(Database)]
     C --> J[(Redis)]
     C --> K[JWT]
 
@@ -47,230 +63,327 @@ graph TB
 
     H --> N[BullMQ Queue]
     H --> I
-</arg_value
+```
+
+---
 
 ## Features
 
-- **Authentication**: JWT with short-lived access tokens (~15min) and rotating refresh tokens
-- **Dynamic RBAC**: Manage roles and permissions at runtime via API
-- **Flight Search**: Redis-cached flight search via Duffel API
-- **Booking System**: Idempotent booking creation, cancellation, and changes
-- **Payment Processing**: Stripe integration with manual capture (test mode)
-- **Webhooks**: HMAC-verified webhook processing with BullMQ queues
-- **Rate Limiting**: Per-IP and per-user rate limiting with Redis
-- **Swagger Documentation**: Auto-generated OpenAPI docs
-- **Structured Logging**: JSON logging with Pino and correlation IDs
-- **Dual Deployment**: Docker (dev/prod) and PM2 support
-- **Security**: Helmet, CORS, security headers, and more
+### Authentication
 
-## Choose Your Deployment
+* JWT-based authentication
+* Short-lived access tokens
+* Rotating refresh tokens
+* Configurable token expiration
+* Secure password hashing
 
-### Docker (Recommended for portability and local development)
+### Dynamic RBAC
+
+* Runtime role management
+* Runtime permission management
+* Role-permission assignments
+* User-role assignments
+* Guard-based authorization
+
+### Flight Search
+
+* Duffel API integration
+* Flight offer search
+* Passenger-based search
+* Redis caching
+* Configurable cache expiration
+
+### Booking System
+
+* Flight booking creation
+* Idempotent booking creation
+* Booking cancellation
+* Booking changes
+* Order management
+* Duffel order integration
+
+### Payment Processing
+
+* Stripe integration
+* Payment intent handling
+* Manual capture support
+* Webhook verification
+* Payment/order synchronization
+
+> Stripe is currently configured for test-mode payment processing.
+
+### Webhooks
+
+* Duffel webhook support
+* HMAC signature verification
+* BullMQ-based asynchronous processing
+* Retry support
+* Persistent webhook records
+
+### Security
+
+* Helmet
+* CORS
+* Security headers
+* JWT authentication
+* Role-based authorization
+* Rate limiting
+* HMAC webhook verification
+* Input validation
+
+### Performance
+
+* Redis caching
+* Background queues with BullMQ
+* Database indexing
+* Idempotent operations
+* Structured logging
+
+### Developer Experience
+
+* Swagger/OpenAPI documentation
+* ESLint
+* Prettier
+* Vitest
+* Docker support
+* PM2 support
+* Prisma migrations
+* CI/CD
+* CodeQL security analysis
+
+---
+
+# Technology Stack
+
+| Technology | Purpose                                |
+| ---------- | -------------------------------------- |
+| NestJS     | Backend framework                      |
+| TypeScript | Programming language                   |
+| Prisma     | ORM / database access                  |
+| PostgreSQL | Primary relational database            |
+| MySQL      | Alternative relational database        |
+| MongoDB    | Alternative database                   |
+| Redis      | Cache, rate limiting and queue backend |
+| BullMQ     | Background job processing              |
+| Duffel     | Flight search and booking              |
+| Stripe     | Payment processing                     |
+| JWT        | Authentication                         |
+| Pino       | Structured logging                     |
+| Swagger    | API documentation                      |
+| Docker     | Containerized deployment               |
+| PM2        | Process management                     |
+| Vitest     | Testing                                |
+
+---
+
+# Choose Your Deployment
+
+## Docker
+
+Docker is recommended for portability and local development.
+
+### Development
 
 ```bash
-# Development
 docker compose -f docker/docker-compose.yml up --build
+```
 
-# Production
+### Production
+
+```bash
 docker compose -f docker/docker-compose.prod.yml up --build -d
 ```
 
-> NestJS v12 is ESM-only. If running locally outside Docker, ensure Node.js >= 20.
+> NestJS v12 is ESM-only. If running the application locally outside Docker, make sure Node.js >= 20 is installed.
 
-### PM2 (For bare-metal/VPS without container overhead)
+---
+
+## PM2
+
+PM2 is useful for bare-metal servers and VPS deployments without container overhead.
+
+### Install dependencies
 
 ```bash
-# Install dependencies
 npm ci
-
-# Generate Prisma client
-npx prisma generate
-
-# Run migrations
-npx prisma migrate deploy
-
-# Start with PM2
-npm run pm2:dev   # development
-npm run pm2:prod  # production
 ```
 
-## Environment Variables
+### Generate Prisma Client
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NODE_ENV` | Environment (development, production, test) | development |
-| `PORT` | Application port | 3000 |
-| `CORS_ORIGIN` | CORS allowed origins (comma-separated) | http://localhost:3000 |
-| `DATABASE_URL` | Database connection string | - |
-| `DATABASE_PROVIDER` | Database type (postgresql, mysql, mongodb) | postgresql |
-| `REDIS_HOST` | Redis host | localhost |
-| `REDIS_PORT` | Redis port | 6379 |
-| `REDIS_DB` | Redis database number | 0 |
-| `JWT_ACCESS_SECRET` | JWT access token secret (min 32 chars) | - |
-| `JWT_ACCESS_EXPIRES_IN` | Access token expiry | 15m |
-| `JWT_REFRESH_SECRET` | JWT refresh token secret (min 32 chars) | - |
-| `JWT_REFRESH_EXPIRES_IN` | Refresh token expiry | 7d |
-| `DUFFEL_ACCESS_TOKEN` | Duffel API access token | - |
-| `DUFFEL_WEBHOOK_SECRET` | Duffel webhook HMAC secret | - |
-| `DUFFEL_ENVIRONMENT` | Duffel environment (test/live) | test |
-| `STRIPE_SECRET_KEY` | Stripe secret key | - |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | - |
-| `THROTTLE_TTL` | Rate limit TTL in ms | 60000 |
-| `THROTTLE_LIMIT` | Rate limit max requests | 100 |
+```bash
+npx prisma generate
+```
 
-See `.env.example` for all variables.
+### Run migrations
 
-### Database Configuration
+```bash
+npx prisma migrate deploy
+```
 
-Skylane supports PostgreSQL, MySQL, and MongoDB:
+### Start with PM2
+
+```bash
+npm run pm2:dev
+```
+
+For production:
+
+```bash
+npm run pm2:prod
+```
+
+---
+
+# Environment Variables
+
+Create a `.env` file based on `.env.example`.
+
+| Variable                 | Description                    | Default                 |
+| ------------------------ | ------------------------------ | ----------------------- |
+| `NODE_ENV`               | Environment                    | `development`           |
+| `PORT`                   | Application port               | `3000`                  |
+| `CORS_ORIGIN`            | Allowed CORS origins           | `http://localhost:3000` |
+| `DATABASE_URL`           | Database connection string     | Required                |
+| `DATABASE_PROVIDER`      | Database provider              | `postgresql`            |
+| `REDIS_HOST`             | Redis host                     | `localhost`             |
+| `REDIS_PORT`             | Redis port                     | `6379`                  |
+| `REDIS_DB`               | Redis database number          | `0`                     |
+| `JWT_ACCESS_SECRET`      | JWT access token secret        | Required                |
+| `JWT_ACCESS_EXPIRES_IN`  | Access token expiry            | `15m`                   |
+| `JWT_REFRESH_SECRET`     | JWT refresh token secret       | Required                |
+| `JWT_REFRESH_EXPIRES_IN` | Refresh token expiry           | `7d`                    |
+| `DUFFEL_ACCESS_TOKEN`    | Duffel API access token        | Required                |
+| `DUFFEL_WEBHOOK_SECRET`  | Duffel webhook HMAC secret     | Required                |
+| `DUFFEL_ENVIRONMENT`     | Duffel environment             | `test`                  |
+| `STRIPE_SECRET_KEY`      | Stripe secret key              | Required                |
+| `STRIPE_WEBHOOK_SECRET`  | Stripe webhook signing secret  | Required                |
+| `THROTTLE_TTL`           | Rate limit TTL in milliseconds | `60000`                 |
+| `THROTTLE_LIMIT`         | Maximum requests per TTL       | `100`                   |
+
+See `.env.example` for the complete list of supported variables.
+
+---
+
+# Database Configuration
+
+Skylane supports:
+
+* PostgreSQL
+* MySQL
+* MongoDB
+
+## PostgreSQL
 
 ```env
-# PostgreSQL (default)
 DATABASE_PROVIDER=postgresql
 DATABASE_URL=postgresql://user:pass@localhost:5432/skylane?schema=public
+```
 
-# MySQL
+## MySQL
+
+```env
 DATABASE_PROVIDER=mysql
 DATABASE_URL=mysql://user:pass@localhost:3306/skylane
+```
 
-# MongoDB
+## MongoDB
+
+```env
 DATABASE_PROVIDER=mongodb
 DATABASE_URL=mongodb://user:pass@localhost:27017/skylane
 ```
 
-To set up the database:
+---
+
+## Database Setup
+
+Select the database provider using `DATABASE_PROVIDER` and configure `DATABASE_URL`.
+
+### PostgreSQL / MySQL
+
 ```bash
-# Select provider via DATABASE_PROVIDER (postgresql|mysql|mongodb)
-# and DATABASE_URL in .env, then:
+npm run db:setup
+```
 
-# For PostgreSQL/MySQL
-npm run db:setup   # picks schema based on DATABASE_PROVIDER
+The setup command selects the appropriate Prisma schema based on `DATABASE_PROVIDER`.
 
-# For MongoDB
+### MongoDB
+
+```bash
 npm run prisma:push:mongo
+```
 
-# Seed
+### Seed the database
+
+```bash
 npm run prisma:seed
 ```
 
-## Quick Start
+---
+
+# Quick Start
+
+## 1. Clone the repository
 
 ```bash
-# Clone and install
 git clone https://github.com/skylane/skylane-api.git
 cd skylane-api
+```
+
+## 2. Install dependencies
+
+Using pnpm:
+
+```bash
 pnpm install
-
-# Set up environment
-cp .env.example .env
-# Edit .env with your actual values
-
-# Option 1: Docker (includes Postgres + Redis)
-docker compose -f docker/docker-compose.yml up --build
-
-# Option 2: Manual setup with PM2
-npm run pm2:dev
-
-# Seed the database
-npx prisma db push
-npx prisma db seed
 ```
 
-## API Documentation
-
-Once the server is running, visit:
-
-```
-http://localhost:3000/api/docs
-```
-
-### Example Flow: Search → Book → Cancel
+Or using npm:
 
 ```bash
-# 1. Register
-curl -X POST http://localhost:3000/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"SecurePass123!","name":"Test User"}'
-
-# 2. Login
-LOGIN_RESPONSE=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"SecurePass123!"}')
-ACCESS_TOKEN=$(echo $LOGIN_RESPONSE | jq -r '.data.accessToken')
-
-# 3. Search flights
-curl -X POST http://localhost:3000/api/v1/flights/search \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "origin": "LHR",
-    "destination": "JFK",
-    "departureDate": "2024-12-25",
-    "passengers": [{"type": "adult"}]
-  }'
-
-# 4. Create booking
-curl -X POST http://localhost:3000/api/v1/bookings \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "offerId": "your-offer-id",
-    "passengers": [{"firstName":"John","lastName":"Doe","email":"john@example.com"}],
-    "idempotencyKey": "unique-key-123"
-  }'
-
-# 5. Cancel booking
-curl -X POST http://localhost:3000/api/v1/bookings/{booking-id}/cancel \
-  -H "Authorization: Bearer $ACCESS_TOKEN"
-```
-
-## Development
-
-```bash
-# Install dependencies
 npm ci
+```
 
-# Generate Prisma client
+## 3. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and provide your actual database, Redis, Duffel and Stripe credentials.
+
+## 4. Start with Docker
+
+```bash
+docker compose -f docker/docker-compose.yml up --build
+```
+
+Or start manually:
+
+```bash
+npm run pm2:dev
+```
+
+## 5. Generate Prisma Client
+
+```bash
 npx prisma generate
-
-# Start in development mode
-npm run start:dev
-
-# Run tests
-npm test              # unit tests
-npm run test:e2e      # e2e tests (uses Vitest)
-
-# Lint and format
-npm run lint
-npm run format
 ```
 
-## Project Structure
+## 6. Setup database
 
-```
-src/
-├── config/          # Environment configuration
-├── common/          # Shared utilities (guards, pipes, interceptors)
-├── database/        # Prisma service
-├── modules/
-│   ├── auth/        # Authentication & JWT
-│   ├── users/       # User management
-│   ├── roles/       # RBAC & permissions
-│   ├── flights/     # Flight search (Duffel + Redis)
-│   ├── bookings/    # Booking system
-│   ├── payments/    # Payment processing (Stripe)
-│   ├── duffel/      # Duffel API wrapper
-│   └── webhooks/    # Webhook handling (HMAC + BullMQ)
+```bash
+npm run db:setup
 ```
 
-## License
+## 7. Seed database
 
-MIT - see [LICENSE](LICENSE) for details.
+```bash
+npm run prisma:seed
+```
 
-## Contributing
+---
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
+# API Documentation
 
-## Security
-
-See [SECURITY.md](SECURITY.md) for security policy and vulnerability reporting.
+Once the server is running, Swagger documentatio
